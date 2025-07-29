@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ES FORUM</title>
+  <style>
+    body {
+      background: linear-gradient(to bottom, #ffe4e1, #e6e6fa);
+      font-family: 'Verdana', sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background-color: #8a2be2;
+      color: white;
+      text-align: center;
+      padding: 30px;
+    }
+    header h1 {
+      font-size: 48px;
+      margin: 0;
+      text-shadow: 2px 2px black;
+    }
+    header p {
+      font-size: 20px;
+      margin-top: 8px;
+      color: #f0f0f0;
+      font-style: italic;
+    }
+    nav {
+      display: flex;
+      justify-content: space-around;
+      background-color: #dda0dd;
+      padding: 12px;
+      font-weight: bold;
+    }
+    nav a {
+      color: white;
+      background-color: #9370db;
+      padding: 8px 16px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 16px;
+      transition: background-color 0.3s;
+      cursor: pointer;
+    }
+    nav a:hover {
+      background-color: #6a5acd;
+    }
+    #content-area {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .post {
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .post strong {
+      color: #4b0082;
+    }
+    .post small {
+      color: gray;
+    }
+    img {
+      max-width: 100%;
+      border-radius: 10px;
+      margin-top: 10px;
+    }
+    input, button {
+      padding: 10px;
+      font-size: 14px;
+      margin: 5px 0;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    #login-section, #secret-chat {
+      text-align: center;
+      margin-top: 50px;
+    }
+    #main-content {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>ES FORUM</h1>
+    <p>Cogito, ergo sum</p>
+  </header>
+
+  <div id="login-section">
+    <h2>Enter your username to continue</h2>
+    <input type="text" id="username" placeholder="Username">
+    <button onclick="enterForum()">Enter</button>
+  </div>
+
+  <div id="main-content">
+    <nav>
+      <a onclick="showSection('chat')">Chat</a>
+      <a onclick="showSection('pdfnews')">PDF/NEWS</a>
+      <a onclick="showSection('help')">Help</a>
+    </nav>
+    <div id="content-area"></div>
+  </div>
+
+  <script>
+    let currentUser = '';
+    let userIsSani1717 = false;
+
+    function enterForum() {
+      const input = document.getElementById('username').value.trim();
+      if (input) {
+        currentUser = input;
+        userIsSani1717 = (currentUser === 'sani1717');
+        document.getElementById('login-section').style.display = 'none';
+        document.getElementById('main-content').style.display = 'block';
+      }
+    }
+
+    function showSection(section) {
+      const area = document.getElementById('content-area');
+      area.innerHTML = '';
+
+      if (section === 'chat') {
+        area.innerHTML = `
+          <h2>Chat Room</h2>
+          <div id="chatbox"></div>
+          <input type="text" id="chatInput" placeholder="Type a message...">
+          <input type="file" id="imageInput">
+          <button onclick="sendMessage()">Send</button>
+        `;
+        renderChatMessages();
+      } else if (section === 'pdfnews') {
+        if (userIsSani1717) {
+          area.innerHTML = `
+            <h2>Post PDF or News</h2>
+            <input type="text" id="postText" placeholder="Enter PDF link or news">
+            <button onclick="postPDFNews()">Post</button>
+            <div id="pdfNewsFeed"></div>
+          `;
+        } else {
+          area.innerHTML = `<h2>PDF/News Feed</h2><div id="pdfNewsFeed"></div>`;
+        }
+        renderPDFNews();
+      } else if (section === 'help') {
+        area.innerHTML = `
+          <h2>Help Chatbot</h2>
+          <input id="helpInput" placeholder="Ask something...">
+          <button onclick="getHelp()">Ask</button>
+          <div id="helpResponse"></div>
+        `;
+      }
+    }
+
+    function sendMessage() {
+      const input = document.getElementById('chatInput');
+      const fileInput = document.getElementById('imageInput');
+      const messages = JSON.parse(localStorage.getItem('chatMessages')) || [];
+      const msg = { user: currentUser, text: input.value, time: new Date().toLocaleString(), image: null };
+
+      if (fileInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = e => {
+          msg.image = e.target.result;
+          messages.push(msg);
+          localStorage.setItem('chatMessages', JSON.stringify(messages));
+          renderChatMessages();
+        };
+        reader.readAsDataURL(fileInput.files[0]);
+      } else {
+        messages.push(msg);
+        localStorage.setItem('chatMessages', JSON.stringify(messages));
+        renderChatMessages();
+      }
+      input.value = '';
+      fileInput.value = '';
+    }
+
+    function renderChatMessages() {
+      const container = document.getElementById('chatbox');
+      if (!container) return;
+      container.innerHTML = '';
+      const messages = JSON.parse(localStorage.getItem('chatMessages')) || [];
+      messages.forEach((msg, index) => {
+        const div = document.createElement('div');
+        div.classList.add('post');
+        div.innerHTML = `<strong>${msg.user}</strong> <small>${msg.time}</small><br>${msg.text}`;
+        if (msg.image) div.innerHTML += `<br><img src="${msg.image}">`;
+        if (msg.user === currentUser) {
+          const btn = document.createElement('button');
+          btn.textContent = '❌';
+          btn.style.marginLeft = '10px';
+          btn.onclick = () => deleteChatMessage(index);
+          div.appendChild(btn);
+        }
+        container.appendChild(div);
+      });
+    }
+
+    function postPDFNews() {
+      const input = document.getElementById('postText');
+      const posts = JSON.parse(localStorage.getItem('pdfNews')) || [];
+      const post = { user: currentUser, text: input.value, time: new Date().toLocaleString() };
+      posts.push(post);
+      localStorage.setItem('pdfNews', JSON.stringify(posts));
+      input.value = '';
+      renderPDFNews();
+    }
+
+    function deletePDFNews(index) {
+      const posts = JSON.parse(localStorage.getItem('pdfNews')) || [];
+      posts.splice(index, 1);
+      localStorage.setItem('pdfNews', JSON.stringify(posts));
+      renderPDFNews();
+    }
+
+    function renderPDFNews() {
+      const feed = document.getElementById('pdfNewsFeed');
+      if (!feed) return;
+      feed.innerHTML = '';
+      const posts = JSON.parse(localStorage.getItem('pdfNews')) || [];
+      posts.forEach((post, index) => {
+        const div = document.createElement('div');
+        div.classList.add('post');
+        div.innerHTML = `<strong>${post.user}</strong> <small>${post.time}</small><br>${post.text}`;
+        if (userIsSani1717) {
+          const btn = document.createElement('button');
+          btn.textContent = '❌';
+          btn.onclick = () => deletePDFNews(index);
+          div.appendChild(btn);
+        }
+        feed.appendChild(div);
+      });
+    }
+
+    function getHelp() {
+      const input = document.getElementById('helpInput').value.toLowerCase();
+      const res = document.getElementById('helpResponse');
+      if (input.includes('upload')) res.innerText = 'Use the chat tab to send messages and upload images.';
+      else if (input.includes('chat')) res.innerText = 'Go to the Chat tab to message others.';
+      else if (input.includes('pdf')) res.innerText = 'PDF/News can only be posted by sani1717.';
+      else if (input === 'fidelio') {
+        document.getElementById('main-content').style.display = 'none';
+        document.getElementById('secret-chat').style.display = 'block';
+      } else res.innerText = 'Try asking about chat, help, or PDFs.';
+    }
+  function deleteChatMessage(index) {
+      const messages = JSON.parse(localStorage.getItem('chatMessages')) || [];
+      messages.splice(index, 1);
+      localStorage.setItem('chatMessages', JSON.stringify(messages));
+      renderChatMessages();
+    }
+</script>
+<div id="secret-chat" style="display:none; padding: 20px; max-width: 600px; margin: 20px auto; background: white; border: 1px solid #ccc; border-radius: 10px;">
+  <h2>???</h2>
+  <div id="secretChatBox" style="max-height: 300px; overflow-y: scroll; background: #f9f9f9; padding: 10px; border: 1px solid #aaa; margin-bottom: 10px;"></div>
+  <input type="text" id="secretInput" placeholder="Type a secret message...">
+  <button onclick="sendSecretMessage()">Send</button>
+  <button onclick="goBackToForum()">⬅ Back</button>
+</div>
+
+<script>
+function sendSecretMessage() {
+  const input = document.getElementById('secretInput');
+  const messages = JSON.parse(localStorage.getItem('secretMessages')) || [];
+  const msg = { user: currentUser, text: input.value, time: new Date().toLocaleString() };
+  messages.push(msg);
+  localStorage.setItem('secretMessages', JSON.stringify(messages));
+  renderSecretMessages();
+  input.value = '';
+}
+
+function deleteSecretMessage(index) {
+  const messages = JSON.parse(localStorage.getItem('secretMessages')) || [];
+  messages.splice(index, 1);
+  localStorage.setItem('secretMessages', JSON.stringify(messages));
+  renderSecretMessages();
+}
+
+function renderSecretMessages() {
+  const container = document.getElementById('secretChatBox');
+  container.innerHTML = '';
+  const messages = JSON.parse(localStorage.getItem('secretMessages')) || [];
+  messages.forEach((msg, index) => {
+    const div = document.createElement('div');
+    div.classList.add('post');
+    div.innerHTML = `<strong>${msg.user}</strong> <small>${msg.time}</small><br>${msg.text}`;
+    if (msg.user === currentUser) {
+      const btn = document.createElement('button');
+      btn.textContent = '❌';
+      btn.style.marginLeft = '10px';
+      btn.onclick = () => deleteSecretMessage(index);
+      div.appendChild(btn);
+    }
+    container.appendChild(div);
+  });
+}
+
+function goBackToForum() {
+  document.getElementById('secret-chat').style.display = 'none';
+  document.getElementById('main-content').style.display = 'block';
+}
+</script>
+</body>
+</html>
